@@ -1,0 +1,9 @@
+.env
+files
+/node_modules
+*.crt
+*.csr
+*.key
+*.pub
+fingerprints.txt
+certificatecache.json

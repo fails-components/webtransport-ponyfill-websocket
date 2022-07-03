@@ -1,0 +1,166 @@
+// Copyright (c) 2022 Marten Richter or other contributers (see commit). All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+import { ReadableStream } from 'node:stream/web'
+import {WTWSSession, WTWSStream} from './common.js'
+import {WebSocketServer} from 'ws'
+import WebCrypto from 'tiny-webcrypto'
+import { parse } from 'url'
+import { decode as decodeBase64 } from 'base64-arraybuffer'
+
+export class WebTransportSocketServer {
+  constructor(args) {
+    this.serverargs = args
+    if (!args.server) throw new Error('no server object passed')
+    this.server = args.server
+    this.sessionStreams = {}
+    this.sessionController = {}
+    this.sessionWSSs = {}
+    this.streamWSSs = {}
+    this.orderedStreams = {}
+
+    this.onUpgrade = this.onUpgrade.bind(this)
+    this.orderedStreamsCleanUp = this.orderedStreamsCleanUp.bind(this) //cleanup objs
+    this.server.on('upgrade', this.onUpgrade)
+    setInterval(this.orderedStreamsCleanUp, 1000)
+  }
+
+  orderedStreamsCleanUp() {
+    const now = Date.now()
+    for (let nonce in this.orderedStreams) {
+      const obj = this.orderedStreams[nonce]
+      if (now - obj.orderTime > 1000 * 20) delete obj[nonce]
+    }
+  }
+
+  onUpgrade(request, socket, head) {
+    const { pathname } = parse(request.url)
+    // TODO filter out streams
+    let wss
+    if (pathname.endsWith('/stream')) {
+      const orgpathname = pathname.substring(0, pathname.length - 7)
+      wss = this.streamWSSs[orgpathname] // get the matching session
+    } else {
+      wss = this.sessionWSSs[pathname] // get the matching session
+    }
+    if (wss) {
+      wss.handleUpgrade(request, socket, head, function done(ws) {
+        wss.emit('connection', ws, request)
+      })
+    } else {
+      socket.destroy()
+    }
+  }
+
+  startServer() {
+    this.server.listen(this.serverargs.port)
+  }
+
+  stopServer() {
+    for (let i in this.sessionController) {
+      this.sessionController[i].close() // inform the controller, that we are closing
+      delete this.sessionController[i]
+    }
+    for (let i in this.sessionWSSs) {
+      // inform the controller, that we are closing
+      delete this.sessionWSSs[i]
+    }
+    for (let i in this.streamWSSs) {
+      // inform the controller, that we are closing
+      delete this.streamWSSs[i]
+    }
+    // may be close the server
+    this.stopped = true
+  }
+
+
+
+  newStream(orderer, order) {
+    console.log('newStream', order.nonce)
+    
+    this.orderedStreams[order.nonce] = {
+      orderer,
+      bidirectional: order.bidirectional,
+      incoming: order.incoming,
+      nonce: order.nonce,
+      orderTime: Date.now()
+    }
+  }
+
+  async initStream(args) {
+    if (!args.nonce) return null
+    const nonce = args.nonce
+    // ok first fetch the right order
+    if (!nonce) return null
+    console.log('initStream', nonce)
+    const order = this.orderedStreams[nonce]
+    console.log('initStream 3', nonce)
+    if (!order) return null
+    delete this.orderedStreams[nonce]
+    // we have the order, is it still valid
+    console.log('initStream 4')
+    if (Date.now() - order.orderTime > 1000 * 20) return null
+    // now we can use the orderer's key to verify the message
+    console.log('signature', args.signature)
+    const verified = await WebCrypto.subtle.verify(
+      {
+        name: 'ECDSA',
+        hash: { name: 'SHA-384' }
+      },
+      await order.orderer.verifyKey,
+      decodeBase64(args.signature),
+      nonce
+    )
+    console.log('initStream 5')
+    if (!verified) return
+    // ok everything ok
+    return order // this is the parent, the caller is responsible for calling the onStream function
+  }
+
+  sessionStream(path) {
+    if (path in this.sessionStreams) {
+      return this.sessionsStreams[path]
+    }
+    const serverargs = { ...this.serverargs }
+    serverargs.perMessageDeflate = false
+    serverargs.noServer = true
+    delete serverargs.port
+    delete serverargs.server
+
+    this.sessionWSSs[path] = new WebSocketServer(serverargs)
+
+    this.sessionWSSs[path].on('connection', (ws) => {
+      // we create a new session object, it handles all session stuff
+      const sesobj = new WTWSSession({
+        parentobj: this,
+        ws,
+        role: 'server'
+      })
+      if (this.sessionController[path])
+        this.sessionController[path].enqueue(sesobj)
+    })
+
+    const streamserverargs = { ...serverargs }
+
+    this.streamWSSs[path] = new WebSocketServer(streamserverargs)
+
+    this.streamWSSs[path].on('connection', (ws) => {
+      // we create a new stream object, it handles all stream stuff
+      // it needs to attach to a session later
+      new WTWSStream({
+        serverobj: this,
+        ws,
+        role: 'server'
+      })
+    })
+
+    this.sessionStreams[path] = new ReadableStream({
+      start: (controller) => {
+        this.sessionController[path] = controller
+      }
+    })
+    return this.sessionStreams[path]
+  }
+}
+
