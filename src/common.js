@@ -62,15 +62,12 @@ export class WTWSStream {
 
   // called after we have a parent
   initStream() {
-    console.log('initStream called', this.role)
     if (this.bidirectional || this.incoming) {
       this.readable = new ReadableStream(
         {
           start: async (controller) => {
             try {
-              console.log('before wait connected', this.role)
               await this.connected
-              console.log('after wait connected', this.role)
               this.readableController = controller
               this.parentobj.addReceiveStream(this.readable, controller)
 
@@ -81,9 +78,7 @@ export class WTWSStream {
           },
           pull: async (controller) => {
             if (this.initialIncomingPakets) {
-              console.log('send initial packets')
               this.initialIncomingPakets.forEach((el) => {
-                console.log('send initial packets loop', el)
                 controller.enqueue(new Uint8Array(el))
               })
               delete this.initialIncomingPakets
@@ -124,7 +119,6 @@ export class WTWSStream {
             this.parentobj.addSendStream(this.writable, controller)
           },
           write: (chunk, controller) => {
-            console.log('write start', this.role, chunk)
             if (this.writableclosed) {
               return Promise.resolve()
             }
@@ -140,11 +134,9 @@ export class WTWSStream {
             } else throw new Error('chunk is not of instanceof Uint8Array ')
           },
           close: (controller) => {
-            console.log('before streamFinal pre')
             if (this.writableclosed) {
               return Promise.resolve()
             }
-            console.log('before streamFinal')
             this.streamFinal()
             this.pendingoperation = new Promise((res, rej) => {
               this.pendingres = res
@@ -152,7 +144,6 @@ export class WTWSStream {
             return this.pendingoperation
           },
           abort: (reason) => {
-            console.log('before abort')
             if (this.writableclosed) {
               return new Promise((res, rej) => {
                 res()
@@ -174,7 +165,6 @@ export class WTWSStream {
         { highWaterMark: 4 }
       )
     }
-    console.log('initStream ready ', this.streamReadyPromRes)
     if (this.streamReadyPromRes) {
       // finally we are ready
       const messres = this.streamReadyPromRes
@@ -182,12 +172,10 @@ export class WTWSStream {
       delete this.streamReadyPromRej
       messres()
     }
-    console.log('initStream done ', this.streamReadyProm)
   }
 
   async wsOpen(event) {
     // TODO send auth token to server
-    console.log('stream wsOpen', this.role)
 
     if (this.role === 'client') {
       // should only be called on client side
@@ -207,7 +195,6 @@ export class WTWSStream {
           )
         )
       }
-      console.log('autoken', autoken)
       this.sendCommand(autoken)
       this.connectedres()
     }
@@ -245,11 +232,8 @@ export class WTWSStream {
   async wsMessage(event) {
     if (event.data) {
       if (event.data instanceof ArrayBuffer) {
-        console.log('before wait streamReadyProm', this.streamReadyProm)
         await this.streamReadyProm // prevent execution before initial message
-        console.log('after wait streamReadyProm', this.streamReadyProm)
         // ok this is binary data
-        console.log('readable', this.readableController, this.role, event.data)
         if (!this.readableclosed) {
           if (this.readableController) {
             this.readableController.enqueue(new Uint8Array(event.data))
@@ -338,7 +322,6 @@ export class WTWSStream {
       this.ws.send(chunk, { binary: true }, (err) => {
         if (err) this.pendingrej(err)
         else this.pendingres()
-        console.log('writable', this.writableController)
       })
     } else {
       if (ws.bufferedAmount > bufferSize) {
@@ -404,9 +387,7 @@ export class WTWSStream {
     ) {
       // TODO get parentobj and call init stream
       try {
-        console.log('enter initStream serverobj')
         const order = await this.serverobj.initStream(args)
-        console.log('leave initStream serverobj')
         if (!order) {
           const messrej = this.streamReadyPromRej
           delete this.streamReadyPromRes
@@ -419,7 +400,6 @@ export class WTWSStream {
         this.bidirectional = order.bidirectional
         this.incoming = order.incoming
         this.parentobj = order.orderer
-        console.log('SERVER onStream')
         this.initStream()
         this.parentobj.onStream({
           incoming: order.incoming,
@@ -467,8 +447,8 @@ export class WTWSStream {
         break
       case 'streamFinal':
         if (!this.readableclosed) {
-            this.readableController.close()
-            this.readableclosed = true
+          this.readableController.close()
+          this.readableclosed = true
         }
         break
       default:
@@ -833,16 +813,9 @@ export class WTWSSession {
   onStream(args) {
     this.addStreamObj(args.strobj)
     if (args.incoming) {
-      console.log('onStream inspect mark1')
       if (args.bidirectional) {
-        console.log(
-          'onStream inspect mark2',
-          args.strobj.readable,
-          args.strobj.writable
-        )
         this.incomBiDiController.enqueue(args.strobj)
       } else {
-        console.log('onStream inspect mark3', args.strobj.readable)
         this.incomUniDiController.enqueue(args.strobj.readable)
       }
     } else {
@@ -870,7 +843,6 @@ export class WTWSSession {
 
     switch (args.cmd) {
       case 'orderStream':
-        console.log('orderStream arrived', this.role, args.nonce)
         this.parentobj.newStream(this, {
           bidirectional: args.bidirectional,
           incoming: true,

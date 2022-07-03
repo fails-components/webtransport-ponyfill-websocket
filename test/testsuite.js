@@ -45,10 +45,8 @@ export async function unidirectionalEchoTest(session) {
       if (unidistr.value) {
         // ok we got a stream
         const unidistream = unidistr.value
-        console.log('got incoming unistream', unidistream)
         // echo it
         const uniwritable = await session.createUnidirectionalStream()
-        console.log('got outgoing unistream', uniwritable)
         await unidistream.pipeTo(uniwritable)
         console.log('unidiReader finished piping')
       }
@@ -193,7 +191,6 @@ export async function echoTestsConnection(transport) {
       console.error(`An error occurred: ${error}`)
       throw new Error('incoming bidi stream test failed')
     }
-    console.log('Test MARKY 2')
     try {
       await readbd.cancel(0)
       console.log('All data has been read for incoming bidi stream.')
@@ -201,7 +198,6 @@ export async function echoTestsConnection(transport) {
       console.error(`An error occurred: ${error}`)
       throw new Error('outgoing bidi stream test failed')
     }
-    console.log('Test MARKY 3')
     testArraysEqual(refArray2, resultArray2)
   }
 
@@ -225,7 +221,6 @@ export async function echoTestsConnection(transport) {
 
   if (incomunidi.value) {
     const unidistream = incomunidi.value
-    console.log('got a unidistream')
     readud = unidistream.getReader()
     let pos = 0
 

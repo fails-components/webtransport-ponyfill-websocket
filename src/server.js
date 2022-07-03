@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 
 import { ReadableStream } from 'node:stream/web'
-import {WTWSSession, WTWSStream} from './common.js'
-import {WebSocketServer} from 'ws'
+import { WTWSSession, WTWSStream } from './common.js'
+import { WebSocketServer } from 'ws'
 import WebCrypto from 'tiny-webcrypto'
 import { parse } from 'url'
 import { decode as decodeBase64 } from 'base64-arraybuffer'
@@ -74,11 +74,9 @@ export class WebTransportSocketServer {
     this.stopped = true
   }
 
-
-
   newStream(orderer, order) {
-    console.log('newStream', order.nonce)
-    
+    // console.log('newStream', order.nonce)
+
     this.orderedStreams[order.nonce] = {
       orderer,
       bidirectional: order.bidirectional,
@@ -93,16 +91,12 @@ export class WebTransportSocketServer {
     const nonce = args.nonce
     // ok first fetch the right order
     if (!nonce) return null
-    console.log('initStream', nonce)
     const order = this.orderedStreams[nonce]
-    console.log('initStream 3', nonce)
     if (!order) return null
     delete this.orderedStreams[nonce]
     // we have the order, is it still valid
-    console.log('initStream 4')
     if (Date.now() - order.orderTime > 1000 * 20) return null
     // now we can use the orderer's key to verify the message
-    console.log('signature', args.signature)
     const verified = await WebCrypto.subtle.verify(
       {
         name: 'ECDSA',
@@ -112,7 +106,6 @@ export class WebTransportSocketServer {
       decodeBase64(args.signature),
       nonce
     )
-    console.log('initStream 5')
     if (!verified) return
     // ok everything ok
     return order // this is the parent, the caller is responsible for calling the onStream function
@@ -163,4 +156,3 @@ export class WebTransportSocketServer {
     return this.sessionStreams[path]
   }
 }
-

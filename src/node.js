@@ -5,5 +5,5 @@
 import { WebTransport } from './client.js'
 import { WebTransportSocketServer } from './server.js'
 
-export {WebTransport}
-export {WebTransportSocketServer}
+export { WebTransport }
+export { WebTransportSocketServer }

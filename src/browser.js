@@ -4,4 +4,4 @@
 
 import { WebTransport } from './client.js'
 
-export {WebTransport}
+export { WebTransport }
