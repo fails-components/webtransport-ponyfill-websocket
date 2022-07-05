@@ -22,8 +22,7 @@ So you must use on the client  and server side (but not all webtransport feature
 PR request are welcome and will be supported by advise from the author.
 
 
-
-## Installation and using
+## Installation and usage
 You can install the package directly via npm from node.js or github packages:
 
 ```bash
