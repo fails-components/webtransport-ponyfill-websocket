@@ -14,6 +14,9 @@ export class WTWSStream {
   constructor(args) {
     this.ws = args.ws
     this.ws.binaryType = 'arraybuffer'
+    if (typeof window === 'undefined') {
+      this.ws.binaryType = 'fragments'
+    }
     this.role = args.role
     if (this.role === 'server') {
       this.serverobj = args.serverobj
@@ -33,8 +36,6 @@ export class WTWSStream {
 
     this.pendingoperation = null
     this.pendingres = null
-
-    this.ws.binaryType = 'arraybuffer'
 
     this.writeChunk = this.writeChunk.bind(this)
 
@@ -245,6 +246,17 @@ export class WTWSStream {
       } else if (typeof event.data === 'string') {
         const mess = JSON.parse(event.data)
         this.onMessage(mess)
+      } else if (Array.isArray(event.data)) {
+        if (!this.readableclosed) {
+          event.data.forEach((data) => {
+            if (this.readableController) {
+              this.readableController.enqueue(new Uint8Array(data))
+              if (this.readableController.desiredSize < 0) this.stopReading()
+            } else {
+              this.initialIncomingPakets.push(data)
+            }
+          })
+        }
       } else {
         console.log(
           'unsupported data type websocket',
