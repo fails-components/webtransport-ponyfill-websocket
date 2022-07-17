@@ -205,7 +205,7 @@ export class WTWSStream {
             (
               await this.parentobj.signKeyPair
             ).privateKey,
-            this.nonce
+            new TextEncoder('utf-8').encode(this.nonce)
           )
         )
       }
