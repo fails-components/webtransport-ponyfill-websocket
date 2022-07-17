@@ -64,6 +64,8 @@ export class WTWSStream {
       this.streamReadyProm = new Promise((resolve, reject) => {
         this.streamReadyPromRes = resolve
         this.streamReadyPromRej = reject
+      }).catch((error) => {
+        console.log('problem in orphaned stream', error)
       })
     }
   }
@@ -250,7 +252,11 @@ export class WTWSStream {
   async wsMessage(event) {
     if (event.data) {
       if (event.data instanceof ArrayBuffer) {
-        await this.streamReadyProm // prevent execution before initial message
+        try {
+          await this.streamReadyProm // prevent execution before initial message
+        } catch (error) {
+          // silent
+        }
         // ok this is binary data
         if (!this.readableclosed) {
           if (this.readableController) {
@@ -441,7 +447,13 @@ export class WTWSStream {
       }
       return
     }
-    if (!this.parentobj) await this.streamReadyProm
+    if (!this.parentobj) {
+      try {
+        await this.streamReadyProm
+      } catch (error) {
+        return
+      }
+    }
 
     const parentstate = this.parentobj.state
     if (parentstate === 'closed' || parentstate === 'failed') return

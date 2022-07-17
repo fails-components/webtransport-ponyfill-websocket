@@ -1,6 +1,6 @@
 {
   "name": "@fails-components/webtransport-ponyfill-websocket",
-  "version": "0.0.0-dev5",
+  "version": "0.0.0-dev6",
   "description": "A component to add a webtransport ponyfill over websocket (server and client) to node.js and the browser",
   "main": "src/node.js",
   "browser": "src/browser.js",
