@@ -4,6 +4,20 @@
 
 import { WebTransport } from './client.js'
 import { WebTransportSocketServer } from './server.js'
+import { setStreamFactory } from './common.js'
+import { ReadableStream, WritableStream } from 'node:stream/web'
+
+class StreamFactory {
+  newReadableStream(args) {
+    return new ReadableStream(args)
+  }
+
+  newWritableStream(args) {
+    return new WritableStream(args)
+  }
+}
+
+setStreamFactory(new StreamFactory())
 
 export { WebTransport }
 export { WebTransportSocketServer }

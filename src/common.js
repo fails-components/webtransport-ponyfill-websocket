@@ -2,13 +2,18 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import { ReadableStream, WritableStream } from 'isomorphic'
 import WebCrypto from 'tiny-webcrypto'
 import { encode as encodeBase64 } from 'base64-arraybuffer'
 
 const bufferSize = 1024 * 512 // buffersize before blocking
 
 const onnode = typeof window === 'undefined'
+
+let streamfactory
+
+export function setStreamFactory(factory) {
+  streamfactory = factory
+}
 
 export class WTWSStream {
   constructor(args) {
@@ -68,7 +73,7 @@ export class WTWSStream {
   // called after we have a parent
   initStream() {
     if (this.bidirectional || this.incoming) {
-      this.readable = new ReadableStream(
+      this.readable = streamfactory.newReadableStream(
         {
           start: async (controller) => {
             try {
@@ -117,7 +122,7 @@ export class WTWSStream {
       )
     }
     if (this.bidirectional || !this.incoming) {
-      this.writable = new WritableStream(
+      this.writable = streamfactory.newWritableStream(
         {
           start: (controller) => {
             this.writableController = controller
@@ -508,25 +513,25 @@ export class WTWSSession {
       this.closedReject = reject
     }).catch(() => {}) // add default handler if no one cares
 
-    this.incomingBidirectionalStreams = new ReadableStream({
+    this.incomingBidirectionalStreams = streamfactory.newReadableStream({
       start: (controller) => {
         this.incomBiDiController = controller
       }
     })
 
-    this.incomingUnidirectionalStreams = new ReadableStream({
+    this.incomingUnidirectionalStreams = streamfactory.newReadableStream({
       start: (controller) => {
         this.incomUniDiController = controller
       }
     })
 
     this.datagrams = {}
-    this.datagrams.readable = new ReadableStream({
+    this.datagrams.readable = streamfactory.newReadableStream({
       start: (controller) => {
         this.incomDatagramController = controller
       }
     })
-    this.datagrams.writable = new WritableStream({
+    this.datagrams.writable = streamfactory.newWritableStream({
       start: (controller) => {
         this.outgoDatagramController = controller
       },
