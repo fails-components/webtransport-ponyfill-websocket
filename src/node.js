@@ -6,6 +6,7 @@ import { WebTransport } from './client.js'
 import { WebTransportSocketServer } from './server.js'
 import { setStreamFactory } from './common.js'
 import { ReadableStream, WritableStream } from 'node:stream/web'
+import { WebSocket } from 'ws'
 
 class StreamFactory {
   newReadableStream(args) {
@@ -14,6 +15,12 @@ class StreamFactory {
 
   newWritableStream(args) {
     return new WritableStream(args)
+  }
+
+  newWebsocket(args) {
+    return new WebSocket(args, {
+      perMessageDeflate: false
+    })
   }
 }
 

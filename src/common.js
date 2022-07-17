@@ -15,6 +15,10 @@ export function setStreamFactory(factory) {
   streamfactory = factory
 }
 
+export function getStreamFactory() {
+  return streamfactory
+}
+
 export class WTWSStream {
   constructor(args) {
     this.ws = args.ws

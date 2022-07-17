@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import { echoTestsConnection } from './testsuite.js'
-import { WebTransport  } from '../src/webtransport-ponyfill.js'
+import { WebTransport } from '../src/webtransport-ponyfill.js'
 
 async function startClientTests(args, hashes) {
   const url = 'https://' + args.hostname + ':' + args.port + '/echo'

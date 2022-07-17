@@ -6,7 +6,7 @@ import { WebTransport } from './client.js'
 import { setStreamFactory } from './common.js'
 
 // eslint-disable-next-line no-undef
-const { ReadableStream, WritableStream } = self
+const { ReadableStream, WritableStream, WebSocket } = self
 
 class StreamFactory {
   newReadableStream(args) {
@@ -15,6 +15,10 @@ class StreamFactory {
 
   newWritableStream(args) {
     return new WritableStream(args)
+  }
+
+  newWebsocket(args) {
+    return new WebSocket(args)
   }
 }
 

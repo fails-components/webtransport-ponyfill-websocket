@@ -2,17 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import { WTWSSession, WTWSStream } from './common.js'
-import Websocket from 'isomorphic-ws'
+import { WTWSSession, WTWSStream, getStreamFactory } from './common.js'
 
 export class WebTransport {
   constructor(url, args) {
     if (!url) throw new Error('no URL supplied')
     this.url = url
 
-    this.ws = new Websocket(url, {
-      perMessageDeflate: false
-    })
+    this.ws = getStreamFactory().newWebsocket(url)
 
     this.sessionint = new WTWSSession({
       ws: this.ws,
@@ -33,9 +30,7 @@ export class WebTransport {
   }
 
   newStream(orderer, order) {
-    const wsstream = new Websocket(this.url + '/stream', {
-      perMessageDeflate: false
-    })
+    const wsstream = getStreamFactory().newWebsocket(this.url + '/stream')
     const stream = new WTWSStream({
       ws: wsstream,
       parentobj: this.sessionint,
