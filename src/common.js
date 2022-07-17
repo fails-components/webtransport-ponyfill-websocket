@@ -7,8 +7,6 @@ import { encode as encodeBase64 } from 'base64-arraybuffer'
 
 const bufferSize = 1024 * 512 // buffersize before blocking
 
-const onnode = typeof window === 'undefined'
-
 let streamfactory
 
 export function setStreamFactory(factory) {
@@ -303,7 +301,7 @@ export class WTWSStream {
       rej = reject
     })
     const strsend = JSON.stringify(cmdobj)
-    if (onnode) {
+    if (streamfactory.isNode()) {
       this.ws.send(strsend, { binary: false }, (err) => {
         if (err) {
           console.log('wtws: error sending stream cmd: ', err)
@@ -325,7 +323,7 @@ export class WTWSStream {
 
   startReading() {
     // we can signal that we want to start reading something, used for blocking
-    if (onnode) {
+    if (streamfactory.isNode()) {
       if (this.ws.isPaused) this.ws.resume()
     }
   }
@@ -346,7 +344,7 @@ export class WTWSStream {
 
   writeChunk(chunk) {
     // send a chunk of data and we have to clear pending operation
-    if (onnode) {
+    if (streamfactory.isNode()) {
       this.ws.send(chunk, { binary: true }, (err) => {
         if (err) this.pendingrej(err)
         else this.pendingres()
@@ -400,7 +398,7 @@ export class WTWSStream {
 
   // pause reading the stream
   stopReading() {
-    if (onnode) {
+    if (streamfactory.isNode()) {
       if (!this.ws.isPaused) this.ws.pause()
     }
   }
@@ -653,7 +651,7 @@ export class WTWSSession {
       rej = reject
     })
     const strsend = JSON.stringify(cmdobj)
-    if (onnode) {
+    if (streamfactory.isNode()) {
       this.ws.send(strsend, { binary: false }, (err) => {
         if (err) {
           console.log('wtws: error sending stream cmd: ', err)
@@ -676,7 +674,7 @@ export class WTWSSession {
   async writeDatagram(chunk) {
     // we need to write the datagram
     try {
-      if (onnode) {
+      if (streamfactory.isNode()) {
         await new Promise((resolve, reject) => {
           this.ws.send(chunk, { binary: true }, (err) => {
             if (err) reject(err)
