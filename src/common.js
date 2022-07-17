@@ -136,7 +136,7 @@ export class WTWSStream {
             if (this.writableclosed) {
               return Promise.resolve()
             }
-            if (chunk instanceof Uint8Array) {
+            if (ArrayBuffer.isView(chunk) || chunk instanceof ArrayBuffer) {
               this.pendingoperation = new Promise((resolve, reject) => {
                 this.pendingres = resolve
                 this.pendingrej = reject
@@ -147,7 +147,7 @@ export class WTWSStream {
               return this.pendingoperation
             } else {
               console.log('chunk wrong type', chunk)
-              throw new Error('chunk is not of instanceof Uint8Array ')
+              throw new Error('chunk is not of typedarray or array buffer ')
             }
           },
           close: (controller) => {
@@ -544,14 +544,14 @@ export class WTWSSession {
       },
       write: async (chunk, controller) => {
         if (this.state === 'closed') throw new Error('Session is closed')
-        if (chunk instanceof Uint8Array) {
+        if (ArrayBuffer.isView(chunk) || chunk instanceof ArrayBuffer) {
           try {
             await this.writeDatagram(chunk)
           } catch (error) {
             console.log('writeDatagram failed', error)
             throw new Error('writeDatagram failed')
           }
-        } else throw new Error('chunk is not of type Uint8Array')
+        } else throw new Error('chunk is not of a typedarray or arraybuffer')
       },
       close: (controller) => {
         // do nothing
