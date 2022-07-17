@@ -61,6 +61,10 @@ export class WTWSStream {
     }
   }
 
+  static createStream(args) {
+    return new WTWSStream(args)
+  }
+
   // called after we have a parent
   initStream() {
     if (this.bidirectional || this.incoming) {

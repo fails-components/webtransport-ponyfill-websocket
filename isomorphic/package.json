@@ -4,6 +4,7 @@
   "description": "Internal isomorphic package for WebStreams",
   "main": "node.js",
   "browser": "browser.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

@@ -35,7 +35,7 @@ export class WebTransportSocketServer {
   }
 
   onUpgrade(request, socket, head) {
-    const { pathname } = new URL(request.url)
+    const { pathname } = new URL('http://' + request.headers.host + request.url)
     // TODO filter out streams
     let wss
     if (pathname.endsWith('/stream')) {
@@ -141,7 +141,7 @@ export class WebTransportSocketServer {
     this.streamWSSs[path].on('connection', (ws) => {
       // we create a new stream object, it handles all stream stuff
       // it needs to attach to a session later
-      WTWSStream({
+      WTWSStream.createStream({
         serverobj: this,
         ws,
         role: 'server'
