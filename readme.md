@@ -19,7 +19,12 @@ This package is licensed more permissive, since it can be useful outside of the 
 This packages a WebTransport interface similar to the browser side and our webtransport node.js packages, but uses internally websocket over http.
 So you must use on the client  and server side (but not all webtransport features are implemented). For server as well as for client, see `test/test.js`, `test/testsuite.js`, `test/echoclient.js`, `test/echoserver.js`  for examples.
 
+Internally it opens websocket http/1 (to prevent head of line blocking) for the main WebTransport session and for every stream.
+A json webtoken like mechanism is used to pin and secure the stream to the main session.
+
 PR request are welcome and will be supported by advise from the author.
+
+* This is the first release, if any problems occur, please report the issue via github to make the package stable. *
 
 
 ## Installation and usage
