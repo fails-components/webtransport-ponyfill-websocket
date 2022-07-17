@@ -32,7 +32,8 @@
     "bson": "^4.6.4",
     "isomorphic-streams": "^1.0.3",
     "isomorphic-ws": "^5.0.0",
-    "tiny-webcrypto": "^1.0.1"
+    "tiny-webcrypto": "^1.0.1",
+    "isomorphic": "./isomorphic"
   },
   "devDependencies": {
     "@babel/core": "^7.17.10",
@@ -51,6 +52,9 @@
   "peerDependencies": {
     "ws": "^8.8.0"
   },
+  "bundledDependencies": [
+    "isomorphic"
+  ],
   "optionalDependencies": {
     "bufferutil": "^4.0.6",
     "utf-8-validate": "^5.0.9"
