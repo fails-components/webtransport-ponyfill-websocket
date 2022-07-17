@@ -219,14 +219,17 @@ export class WTWSStream {
     if (this.writable && !this.writableclosed) {
       this.parentobj.removeSendStream(this.writable, this.writableController)
       this.writableclosed = true
-      this.writableController.error(event.code || 0) // there is no way to exit cleanly
+      if (this.writableController)
+        this.writableController.error(event.code || 0) // there is no way to exit cleanly
     }
 
     if (this.readable && !this.readableclosed) {
       this.parentobj.removeReceiveStream(this.readable, this.readableController)
       this.readableclosed = true
-      if (event.wasClean) this.readableController.close(event.code || 0)
-      else this.readableController.error(event.code || 0)
+      if (this.readableController) {
+        if (event.wasClean) this.readableController.close(event.code || 0)
+        else this.readableController.error(event.code || 0)
+      }
     }
   }
 
@@ -234,13 +237,13 @@ export class WTWSStream {
     if (this.writable) {
       this.parentobj.removeSendStream(this.writable, this.writableController)
       this.writableclosed = true
-      this.writableController.error(event)
+      if (this.writableController) this.writableController.error(event)
     }
 
     if (this.readable) {
       this.parentobj.removeReceiveStream(this.readable, this.readableController)
       this.readableclosed = true
-      this.readableController.error(event)
+      if (this.readableController) this.readableController.error(event)
     }
   }
 
@@ -452,7 +455,8 @@ export class WTWSStream {
           )
           if (!this.readableclosed) {
             this.readableclosed = true
-            this.readableController.error(args.code || 0)
+            if (this.readableController)
+              this.readableController.error(args.code || 0)
           }
         } else console.log('stopSending wihtout readable')
         clearpendingop = true
@@ -466,14 +470,15 @@ export class WTWSStream {
           )
           if (!this.writableclosed) {
             this.writableclosed = true
-            this.writableController.error(args.code || 0)
+            if (this.writableController)
+              this.writableController.error(args.code || 0)
           }
         } else console.log('stopSending wihtout writable')
         clearpendingop = true
         break
       case 'streamFinal':
         if (!this.readableclosed) {
-          this.readableController.close()
+          if (this.readableController) this.readableController.close()
           this.readableclosed = true
         }
         break

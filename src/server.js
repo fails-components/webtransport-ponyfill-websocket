@@ -87,26 +87,39 @@ export class WebTransportSocketServer {
   }
 
   async initStream(args) {
-    if (!args.nonce) return null
+    if (!args.nonce) {
+      console.log('missing nonce')
+      return null
+    }
     const nonce = args.nonce
     // ok first fetch the right order
-    if (!nonce) return null
     const order = this.orderedStreams[nonce]
-    if (!order) return null
+    if (!order) {
+      console.log('no stream ordered')
+      return null
+    }
     delete this.orderedStreams[nonce]
     // we have the order, is it still valid
     if (Date.now() - order.orderTime > 1000 * 20) return null
     // now we can use the orderer's key to verify the message
-    const verified = await WebCrypto.subtle.verify(
-      {
-        name: 'ECDSA',
-        hash: { name: 'SHA-384' }
-      },
-      await order.orderer.verifyKey,
-      decodeBase64(args.signature),
-      nonce
-    )
-    if (!verified) return
+    let verified
+    try {
+      verified = await WebCrypto.subtle.verify(
+        {
+          name: 'ECDSA',
+          hash: { name: 'SHA-384' }
+        },
+        await order.orderer.verifyKey,
+        decodeBase64(args.signature),
+        nonce
+      )
+    } catch (error) {
+      console.log('stream verification failed', error)
+    }
+    if (!verified) {
+      console.log('connection not verified')
+      return
+    }
     // ok everything ok
     return order // this is the parent, the caller is responsible for calling the onStream function
   }
