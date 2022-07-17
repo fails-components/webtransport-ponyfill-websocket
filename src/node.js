@@ -22,6 +22,10 @@ class StreamFactory {
       perMessageDeflate: false
     })
   }
+
+  isNode() {
+    return true
+  }
 }
 
 setStreamFactory(new StreamFactory())

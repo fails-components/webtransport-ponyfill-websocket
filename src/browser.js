@@ -20,6 +20,10 @@ class StreamFactory {
   newWebsocket(args) {
     return new WebSocket(args)
   }
+
+  isNode() {
+    return false
+  }
 }
 
 setStreamFactory(new StreamFactory())

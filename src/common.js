@@ -23,7 +23,7 @@ export class WTWSStream {
   constructor(args) {
     this.ws = args.ws
     this.ws.binaryType = 'arraybuffer'
-    if (typeof window === 'undefined') {
+    if (streamfactory.isNode()) {
       this.ws.binaryType = 'fragments'
     }
     this.role = args.role
@@ -145,7 +145,10 @@ export class WTWSStream {
                 this.writeChunk(chunk)
               })
               return this.pendingoperation
-            } else throw new Error('chunk is not of instanceof Uint8Array ')
+            } else {
+              console.log('chunk wrong type', chunk)
+              throw new Error('chunk is not of instanceof Uint8Array ')
+            }
           },
           close: (controller) => {
             if (this.writableclosed) {
