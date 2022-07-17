@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import { ReadableStream, WritableStream } from 'isomorphic-streams'
+import { ReadableStream, WritableStream } from 'isomorphic'
 import WebCrypto from 'tiny-webcrypto'
 import { encode as encodeBase64 } from 'base64-arraybuffer'
 
@@ -29,9 +29,9 @@ export class WTWSStream {
 
     this.closed = false
 
-    this.connected = new Promise((res, rej) => {
-      this.connectedres = res
-      this.connectedrej = rej
+    this.connected = new Promise((resolve, reject) => {
+      this.connectedres = resolve
+      this.connectedrej = reject
     })
 
     this.pendingoperation = null
@@ -54,9 +54,9 @@ export class WTWSStream {
       this.streamReadyProm = Promise.resolve()
     } else {
       this.initialIncomingPakets = []
-      this.streamReadyProm = new Promise((res, rej) => {
-        this.streamReadyPromRes = res
-        this.streamReadyPromRej = rej
+      this.streamReadyProm = new Promise((resolve, reject) => {
+        this.streamReadyPromRes = resolve
+        this.streamReadyPromRej = reject
       })
     }
   }
@@ -95,8 +95,8 @@ export class WTWSStream {
             }
           },
           cancel: (reason) => {
-            const promise = new Promise((res, rej) => {
-              this.cancelres = res
+            const promise = new Promise((resolve, reject) => {
+              this.cancelres = resolve
             })
             let code = 0
             if (reason && reason.code) {
@@ -124,9 +124,9 @@ export class WTWSStream {
               return Promise.resolve()
             }
             if (chunk instanceof Uint8Array) {
-              this.pendingoperation = new Promise((res, rej) => {
-                this.pendingres = res
-                this.pendingrej = rej
+              this.pendingoperation = new Promise((resolve, reject) => {
+                this.pendingres = resolve
+                this.pendingrej = reject
               })
               this.connected.then(() => {
                 this.writeChunk(chunk)
@@ -139,15 +139,15 @@ export class WTWSStream {
               return Promise.resolve()
             }
             this.streamFinal()
-            this.pendingoperation = new Promise((res, rej) => {
-              this.pendingres = res
+            this.pendingoperation = new Promise((resolve, reject) => {
+              this.pendingres = resolve
             })
             return this.pendingoperation
           },
           abort: (reason) => {
             if (this.writableclosed) {
-              return new Promise((res, rej) => {
-                res()
+              return new Promise((resolve, reject) => {
+                resolve()
               })
             }
             let code = 0
@@ -156,8 +156,8 @@ export class WTWSStream {
               else if (reason.code > 255) code = 255
               else code = reason.code
             }
-            const promise = new Promise((res, rej) => {
-              this.abortres = res
+            const promise = new Promise((resolve, reject) => {
+              this.abortres = resolve
             })
             this.resetStream(code)
             return promise
@@ -336,7 +336,7 @@ export class WTWSStream {
         else this.pendingres()
       })
     } else {
-      if (ws.bufferedAmount > bufferSize) {
+      if (this.ws.bufferedAmount > bufferSize) {
         // block !
         setTimeout(this.writeChunk, 100, chunk)
         return
@@ -371,7 +371,7 @@ export class WTWSStream {
     // we need to send resetStream
     // and resolve abortres
     try {
-      await sendCommand({ cmd: 'resetStream', code })
+      await this.sendCommand({ cmd: 'resetStream', code })
     } catch (error) {
       console.log('resetStream failed', error)
     }
@@ -495,13 +495,13 @@ export class WTWSSession {
     this.ws.onmessage = this.wsMessage
     this.ws.onerror = this.wsError
 
-    this.ready = new Promise((res, rej) => {
-      this.readyResolve = res
-      this.readyReject = rej
+    this.ready = new Promise((resolve, reject) => {
+      this.readyResolve = resolve
+      this.readyReject = reject
     }).catch(() => {}) // add default handler if no one cares
-    this.closed = new Promise((res, rej) => {
-      this.closedResolve = res
-      this.closedReject = rej
+    this.closed = new Promise((resolve, reject) => {
+      this.closedResolve = resolve
+      this.closedReject = reject
     }).catch(() => {}) // add default handler if no one cares
 
     this.incomingBidirectionalStreams = new ReadableStream({
@@ -535,7 +535,6 @@ export class WTWSSession {
             console.log('writeDatagram failed', error)
             throw new Error('writeDatagram failed')
           }
-          return
         } else throw new Error('chunk is not of type Uint8Array')
       },
       close: (controller) => {
@@ -564,8 +563,8 @@ export class WTWSSession {
         ['sign', 'verify']
       )
     } else if (this.role === 'server') {
-      this.verifyKey = new Promise((res) => {
-        this.verifyKeyRes = res
+      this.verifyKey = new Promise((resolve) => {
+        this.verifyKeyRes = resolve
       })
       this.serverStartup()
     } else throw new Error('unknown role ' + this.role)
@@ -611,7 +610,7 @@ export class WTWSSession {
   }
 
   wsMessage(event) {
-    //console.log('wsMessage session', this.role, event.data)
+    // console.log('wsMessage session', this.role, event.data)
     if (event.data) {
       if (event.data instanceof ArrayBuffer) {
         // ok this is binary data
@@ -631,7 +630,7 @@ export class WTWSSession {
 
   // this is copied , but probably the only function, that works the same way
   sendCommand(cmdobj) {
-    //console.log('sendCommand session', this.role, cmdobj)
+    // console.log('sendCommand session', this.role, cmdobj)
     let res, rej
     const prom = new Promise((resolve, reject) => {
       res = resolve
@@ -669,7 +668,7 @@ export class WTWSSession {
           })
         })
       } else {
-        if (ws.bufferedAmount > bufferSize) {
+        if (this.ws.bufferedAmount > bufferSize) {
           // block !
           await new Promise((resolve, reject) => {
             setTimeout(async () => {
@@ -758,18 +757,18 @@ export class WTWSSession {
   }
 
   createBidirectionalStream() {
-    const prom = new Promise((res, rej) => {
-      this.resolveBiDi.push(res)
-      this.rejectBiDi.push(rej)
+    const prom = new Promise((resolve, reject) => {
+      this.resolveBiDi.push(resolve)
+      this.rejectBiDi.push(reject)
     })
     this.orderBidiStream()
     return prom
   }
 
   createUnidirectionalStream() {
-    const prom = new Promise((res, rej) => {
-      this.resolveUniDi.push(res)
-      this.rejectUniDi.push(rej)
+    const prom = new Promise((resolve, reject) => {
+      this.resolveUniDi.push(resolve)
+      this.rejectUniDi.push(reject)
     })
     this.orderUnidiStream()
     return prom
@@ -783,7 +782,7 @@ export class WTWSSession {
     this.streamObjs.forEach((ele) => ele.close(closeInfo))
   }
 
-  onReady(error) {
+  onReady(/* error */) {
     console.log('onReady', this.role)
     if (this.readyResolve) this.readyResolve()
     delete this.readyResolve

@@ -6,7 +6,7 @@ import { ReadableStream } from 'node:stream/web'
 import { WTWSSession, WTWSStream } from './common.js'
 import { WebSocketServer } from 'ws'
 import WebCrypto from 'tiny-webcrypto'
-import { parse } from 'url'
+import { URL } from 'url'
 import { decode as decodeBase64 } from 'base64-arraybuffer'
 
 export class WebTransportSocketServer {
@@ -21,21 +21,21 @@ export class WebTransportSocketServer {
     this.orderedStreams = {}
 
     this.onUpgrade = this.onUpgrade.bind(this)
-    this.orderedStreamsCleanUp = this.orderedStreamsCleanUp.bind(this) //cleanup objs
+    this.orderedStreamsCleanUp = this.orderedStreamsCleanUp.bind(this) // cleanup objs
     this.server.on('upgrade', this.onUpgrade)
     setInterval(this.orderedStreamsCleanUp, 1000)
   }
 
   orderedStreamsCleanUp() {
     const now = Date.now()
-    for (let nonce in this.orderedStreams) {
+    for (const nonce in this.orderedStreams) {
       const obj = this.orderedStreams[nonce]
       if (now - obj.orderTime > 1000 * 20) delete obj[nonce]
     }
   }
 
   onUpgrade(request, socket, head) {
-    const { pathname } = parse(request.url)
+    const { pathname } = new URL(request.url)
     // TODO filter out streams
     let wss
     if (pathname.endsWith('/stream')) {
@@ -58,15 +58,15 @@ export class WebTransportSocketServer {
   }
 
   stopServer() {
-    for (let i in this.sessionController) {
+    for (const i in this.sessionController) {
       this.sessionController[i].close() // inform the controller, that we are closing
       delete this.sessionController[i]
     }
-    for (let i in this.sessionWSSs) {
+    for (const i in this.sessionWSSs) {
       // inform the controller, that we are closing
       delete this.sessionWSSs[i]
     }
-    for (let i in this.streamWSSs) {
+    for (const i in this.streamWSSs) {
       // inform the controller, that we are closing
       delete this.streamWSSs[i]
     }
@@ -141,7 +141,7 @@ export class WebTransportSocketServer {
     this.streamWSSs[path].on('connection', (ws) => {
       // we create a new stream object, it handles all stream stuff
       // it needs to attach to a session later
-      new WTWSStream({
+      WTWSStream({
         serverobj: this,
         ws,
         role: 'server'

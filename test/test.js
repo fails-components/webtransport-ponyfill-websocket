@@ -42,7 +42,7 @@ async function run() {
   const server = createServer()
   const wtsserver = new WebTransportSocketServer({
     server,
-    port: 8080,
+    port: 8080
   })
 
   runEchoServer(wtsserver)

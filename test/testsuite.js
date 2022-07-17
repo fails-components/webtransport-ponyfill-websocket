@@ -151,7 +151,7 @@ export async function echoTestsConnection(transport) {
     console.error(`An error occurred: ${error}`)
     throw new Error('outgoing bidi stream test failed')
   }
-  testArraysEqual(refArray1, resultArray1) 
+  testArraysEqual(refArray1, resultArray1)
 
   console.log('webtransport sending bidistream success')
   const bidiReader = transport.incomingBidirectionalStreams.getReader()
