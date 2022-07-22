@@ -14,7 +14,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fails-components/webtransport.git"
+    "url": "git+https://github.com/fails-components/webtransport.ponyfill-websocket.git"
   },
   "keywords": [
     "webtransport",
