@@ -9,22 +9,22 @@ This package is part of FAILS.
 A web based lecture system developed out of university lectures.
 
 The package provides a Webtransport ponyfill using websocket as transport to node.js and the browser. In this way you can support WebTransport and Websocket with the same code basis.
-It is useful, if a browser does not support WebTransport or if the network blocks UDP to your server.
-If you search for webtransport support in node.js use our webtransport package
+It is useful, if a browser does not support WebTransport or if the network blocks UDP to your servers.
+If you require webtransport support in node.js use our webtransport package
 build using libquiche [https://github.com/google/quiche](https://github.com/google/quiche).
 
 While FAILS as a whole is licensed via GNU Affero GPL version 3.0, this package is licensed under a BSD-style license that can be found in the LICENSE file.
 This package is licensed more permissive, since it can be useful outside of the FAILS environment, and FAILS will benefit from the feedback of a larger developer base.
 
 This packages a WebTransport interface similar to the browser side and our webtransport node.js packages, but uses internally websocket over http.
-So you must use on the client  and server side (but not all webtransport features are implemented). For server as well as for client, see `test/test.js`, `test/testsuite.js`, `test/echoclient.js`, `test/echoserver.js`  for examples.
+So you must use it on the client  and server side (but not all webtransport features are implemented). For server as well as for client, see `test/test.js`, `test/testsuite.js`, `test/echoclient.js`, `test/echoserver.js`  for examples.
 
 Internally it opens websocket http/1 (to prevent head of line blocking) for the main WebTransport session and for every stream.
 A json webtoken like mechanism is used to pin and secure the stream to the main session.
 
 PR request are welcome and will be supported by advise from the author.
 
-* This is the first release, if any problems occur, please report the issue via github to make the package stable. *
+* This is one of the first releases, if any problems occur, please report the issue via github to make the package stable. *
 
 
 ## Installation and usage

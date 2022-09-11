@@ -828,10 +828,13 @@ export class WTWSSession {
     this.resolveUniDi = []
     this.rejectBiDi = []
     this.rejectUniDi = []
-
-    this.incomBiDiController.close()
-    this.incomUniDiController.close()
-    this.incomDatagramController.close()
+    try {
+      this.incomBiDiController.close()
+      this.incomUniDiController.close()
+      this.incomDatagramController.close()
+    } catch (error) {
+      console.log('prob closing', error)
+    }
     // this.outgoDatagramController.error(errorcode)
     this.state = 'closed'
 
