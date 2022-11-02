@@ -529,11 +529,11 @@ export class WTWSSession {
     this.ready = new Promise((resolve, reject) => {
       this.readyResolve = resolve
       this.readyReject = reject
-    }).catch(() => {}) // add default handler if no one cares
+    })
     this.closed = new Promise((resolve, reject) => {
       this.closedResolve = resolve
       this.closedReject = reject
-    }).catch(() => {}) // add default handler if no one cares
+    })
 
     this.incomingBidirectionalStreams = streamfactory.newReadableStream({
       start: (controller) => {
