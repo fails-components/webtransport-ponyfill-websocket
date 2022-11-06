@@ -8,6 +8,8 @@ import { WebSocketServer } from 'ws'
 import WebCrypto from 'tiny-webcrypto'
 import { URL } from 'url'
 import { decode as decodeBase64 } from 'base64-arraybuffer'
+// @ts-ignore
+import { defer } from './utils.js'
 
 export class WebTransportSocketServer {
   constructor(args) {
@@ -20,10 +22,49 @@ export class WebTransportSocketServer {
     this.streamWSSs = {}
     this.orderedStreams = {}
 
+    this._ready = defer()
+    this.ready = this._ready.promise
+
+    this._closed = defer()
+    this.closed = this._closed.promise
+
     this.onUpgrade = this.onUpgrade.bind(this)
     this.orderedStreamsCleanUp = this.orderedStreamsCleanUp.bind(this) // cleanup objs
     this.server.on('upgrade', this.onUpgrade)
+    this.onServerClose = this.onServerClose.bind(this)
+    this.server.on('close', this.onServerClose)
+    this.onServerError = this.onServerError.bind(this)
+    this.server.on('error', this.onServerError)
+    this.onServerListening = this.onServerListening.bind(this)
+    this.server.on('listening', this.onServerListening)
+
+    // this.address = this.server.address
     setInterval(this.orderedStreamsCleanUp, 1000)
+  }
+
+  address() {
+    const { address, family, port } = this.server.address()
+
+    return { host: address, family, port }
+  }
+
+  /**
+   */
+  onServerError() {
+    this._ready.reject()
+  }
+
+  /**
+   */
+  onServerListening() {
+    this._ready.resolve()
+  }
+
+  /**
+   */
+  onServerClose() {
+    console.log('server closed')
+    this._closed.resolve()
   }
 
   orderedStreamsCleanUp() {
@@ -71,6 +112,7 @@ export class WebTransportSocketServer {
       delete this.streamWSSs[i]
     }
     // may be close the server
+    this.server.close()
     this.stopped = true
   }
 

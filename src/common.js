@@ -270,6 +270,11 @@ export class WTWSStream {
         const mess = JSON.parse(event.data)
         this.onMessage(mess)
       } else if (Array.isArray(event.data)) {
+        try {
+          await this.streamReadyProm // prevent execution before initial message
+        } catch (error) {
+          // silent
+        }
         if (!this.readableclosed) {
           event.data.forEach((data) => {
             if (this.readableController) {
@@ -292,7 +297,7 @@ export class WTWSStream {
 
   close(closeInfo) {
     // console.log('closeinfo', closeInfo)
-    let reason = 'inknown'
+    let reason = 'unknown'
     let code = 0
     if (closeInfo) {
       if (closeInfo.closecode) code = closeInfo.closecode
@@ -447,13 +452,13 @@ export class WTWSStream {
       }
       return
     }
-    if (!this.parentobj) {
-      try {
-        await this.streamReadyProm
-      } catch (error) {
-        return
-      }
+    // if (!this.parentobj) {
+    try {
+      await this.streamReadyProm
+    } catch (error) {
+      return
     }
+    // }
 
     const parentstate = this.parentobj.state
     if (parentstate === 'closed' || parentstate === 'failed') return
@@ -534,6 +539,7 @@ export class WTWSSession {
       this.closedResolve = resolve
       this.closedReject = reject
     })
+    this.hasclosed = false
 
     this.incomingBidirectionalStreams = streamfactory.newReadableStream({
       start: (controller) => {
@@ -809,7 +815,10 @@ export class WTWSSession {
     // console.log('closeinfo', closeInfo)
     if (this.state === 'closed' || this.state === 'failed') return
 
-    this.ws.close(closeInfo.closecode, closeInfo.reason.substring(0, 1023))
+    this.ws.close(
+      closeInfo ? closeInfo.closecode : 1000,
+      closeInfo ? closeInfo.reason.substring(0, 1023) : ''
+    )
     this.streamObjs.forEach((ele) => ele.close(closeInfo))
   }
 
@@ -821,6 +830,8 @@ export class WTWSSession {
   }
 
   onClose(errorcode, error) {
+    if (this.hasclosed) return
+    this.hasclosed = true
     // console.log('onClose')
     for (const rej of this.rejectBiDi) rej()
     for (const rej of this.rejectUniDi) rej()
