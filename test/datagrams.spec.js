@@ -76,6 +76,7 @@ describe('datagrams', function () {
     await writeStream(client.datagrams.writable, input)
 
     const output = await readStream(client.datagrams.readable, input.length)
+    await client.close()
     expect(output).to.deep.equal(
       input,
       'Did not receive the same bytes we sent'

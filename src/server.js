@@ -39,7 +39,10 @@ export class WebTransportSocketServer {
     this.server.on('listening', this.onServerListening)
 
     // this.address = this.server.address
-    setInterval(this.orderedStreamsCleanUp, 1000)
+    this.orderedStreamsCleanUpInterval = setInterval(
+      this.orderedStreamsCleanUp,
+      1000
+    )
   }
 
   address() {
@@ -105,15 +108,18 @@ export class WebTransportSocketServer {
     }
     for (const i in this.sessionWSSs) {
       // inform the controller, that we are closing
+      this.sessionWSSs[i].close()
       delete this.sessionWSSs[i]
     }
     for (const i in this.streamWSSs) {
       // inform the controller, that we are closing
+      this.streamWSSs[i].close()
       delete this.streamWSSs[i]
     }
     // may be close the server
     this.server.close()
     this.stopped = true
+    clearInterval(this.orderedStreamsCleanUpInterval)
   }
 
   newStream(orderer, order) {
