@@ -10,8 +10,11 @@ export async function writeStream(writable, input) {
   const writer = writable.getWriter()
 
   for (const buf of input) {
+    await writer.ready
     await writer.write(buf)
   }
 
-  await writer.close()
+  await writer.ready
+  await writer.releaseLock()
+  await writable.close()
 }
