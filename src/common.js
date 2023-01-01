@@ -858,8 +858,9 @@ export class WTWSSession {
     this.sendStreamsController.clear()
     this.receiveStreamsController.clear()
     this.streamObjs.clear()
-
-    if (this.closedResolve) this.closedResolve(errorcode)
+    let closeCode = errorcode
+    if (closeCode === 1000) closeCode = 0
+    if (this.closedResolve) this.closedResolve({ reason: '', closeCode })
     if (this.closeHook) {
       this.closeHook()
       delete this.closeHook
