@@ -1,16 +1,22 @@
 {
   "name": "@fails-components/webtransport-ponyfill-websocket",
-  "version": "0.0.4",
+  "version": "0.0.6",
   "description": "A component to add a webtransport ponyfill over websocket (server and client) to node.js and the browser",
   "main": "src/node.js",
-  "browser": "src/browser.js",
+  "browser": {
+    "./src/node.js": "src/browser.js",
+    "./test/fixtures/webtransport.js": "./test/fixtures/webtransport.browser.js"
+  },
   "engines": {
     "node": ">=16"
   },
   "type": "module",
   "scripts": {
     "start": "node test/echoserver.js",
-    "test": "node test/test.js"
+    "test": "npm run test:node && npm run test:chromium",
+    "test:node": "node test/index.js node",
+    "test:chromium": "node test/index.js chromium",
+    "oldtest": "node test/test.js"
   },
   "repository": {
     "type": "git",
@@ -35,6 +41,9 @@
   "devDependencies": {
     "@babel/core": "^7.17.10",
     "@babel/eslint-parser": "^7.17.0",
+    "chai": "^4.3.6",
+    "chai-as-promised": "^7.1.1",
+    "dirty-chai": "^2.0.1",
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^7.2.0",
     "eslint-config-standard": "^16.0.2",
@@ -43,8 +52,12 @@
     "eslint-plugin-prettier": "^3.4.1",
     "eslint-plugin-promise": "^4.3.1",
     "eslint-plugin-standard": "^4.1.0",
+    "execa": "^6.1.0",
+    "mocha": "^10.1.0",
     "node-forge": "^1.3.1",
-    "prettier": "^2.4.1"
+    "playwright-test": "^8.1.1",
+    "prettier": "^2.4.1",
+    "uint8arrays": "^4.0.2"
   },
   "peerDependencies": {
     "ws": "^8.8.0"

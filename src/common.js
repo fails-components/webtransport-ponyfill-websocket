@@ -4,6 +4,7 @@
 
 import WebCrypto from 'tiny-webcrypto'
 import { encode as encodeBase64 } from 'base64-arraybuffer'
+import { WebTransportError } from './error.js'
 
 const bufferSize = 1024 * 512 // buffersize before blocking
 
@@ -193,6 +194,7 @@ export class WTWSStream {
 
   async wsOpen(event) {
     // TODO send auth token to server
+    if (this.ws.heartbeat) this.ws.heartbeat()
 
     if (this.role === 'client') {
       // should only be called on client side
@@ -218,6 +220,7 @@ export class WTWSStream {
   }
 
   wsClose(event) {
+    if (this.ws.pingTimeout) clearTimeout(this.ws.pingTimeout)
     if (this.writable && !this.writableclosed) {
       this.parentobj.removeSendStream(this.writable, this.writableController)
       this.writableclosed = true
@@ -270,6 +273,11 @@ export class WTWSStream {
         const mess = JSON.parse(event.data)
         this.onMessage(mess)
       } else if (Array.isArray(event.data)) {
+        try {
+          await this.streamReadyProm // prevent execution before initial message
+        } catch (error) {
+          // silent
+        }
         if (!this.readableclosed) {
           event.data.forEach((data) => {
             if (this.readableController) {
@@ -292,7 +300,7 @@ export class WTWSStream {
 
   close(closeInfo) {
     // console.log('closeinfo', closeInfo)
-    let reason = 'inknown'
+    let reason = 'unknown'
     let code = 0
     if (closeInfo) {
       if (closeInfo.closecode) code = closeInfo.closecode
@@ -447,13 +455,13 @@ export class WTWSStream {
       }
       return
     }
-    if (!this.parentobj) {
-      try {
-        await this.streamReadyProm
-      } catch (error) {
-        return
-      }
+    // if (!this.parentobj) {
+    try {
+      await this.streamReadyProm
+    } catch (error) {
+      return
     }
+    // }
 
     const parentstate = this.parentobj.state
     if (parentstate === 'closed' || parentstate === 'failed') return
@@ -529,11 +537,12 @@ export class WTWSSession {
     this.ready = new Promise((resolve, reject) => {
       this.readyResolve = resolve
       this.readyReject = reject
-    }).catch(() => {}) // add default handler if no one cares
+    })
     this.closed = new Promise((resolve, reject) => {
       this.closedResolve = resolve
       this.closedReject = reject
-    }).catch(() => {}) // add default handler if no one cares
+    })
+    this.hasclosed = false
 
     this.incomingBidirectionalStreams = streamfactory.newReadableStream({
       start: (controller) => {
@@ -691,6 +700,7 @@ export class WTWSSession {
   async writeDatagram(chunk) {
     // we need to write the datagram
     try {
+      await this.ready
       if (streamfactory.isNode()) {
         await new Promise((resolve, reject) => {
           this.ws.send(chunk, { binary: true }, (err) => {
@@ -809,18 +819,38 @@ export class WTWSSession {
     // console.log('closeinfo', closeInfo)
     if (this.state === 'closed' || this.state === 'failed') return
 
-    this.ws.close(closeInfo.closecode, closeInfo.reason.substring(0, 1023))
+    this.ready.then(() => {
+      this.sendCommand({
+        cmd: 'closeSession',
+        closeInfo
+      })
+
+      this.ws.close(
+        closeInfo ? closeInfo.closecode : 1000,
+        closeInfo ? closeInfo.reason.substring(0, 1023) : ''
+      )
+    })
+    this.closeInt(closeInfo)
+  }
+
+  closeInt(closeInfo) {
+    // console.log('closeinfo closInt', closeInfo)
+    if (this.state === 'closed' || this.state === 'failed') return
+
     this.streamObjs.forEach((ele) => ele.close(closeInfo))
+    this.pendingCloseInfo = closeInfo
   }
 
   onReady(/* error */) {
-    console.log('onReady', this.role)
+    // console.log('onReady', this.role)
     if (this.readyResolve) this.readyResolve()
     delete this.readyResolve
     delete this.readyReject
   }
 
   onClose(errorcode, error) {
+    if (this.hasclosed) return
+    this.hasclosed = true
     // console.log('onClose')
     for (const rej of this.rejectBiDi) rej()
     for (const rej of this.rejectUniDi) rej()
@@ -847,8 +877,23 @@ export class WTWSSession {
     this.sendStreamsController.clear()
     this.receiveStreamsController.clear()
     this.streamObjs.clear()
-
-    if (this.closedResolve) this.closedResolve(errorcode)
+    let closeCode = errorcode
+    let reason = ''
+    if (closeCode === 1000) closeCode = 0
+    if (this.pendingCloseInfo) {
+      closeCode = this.pendingCloseInfo.closeCode
+      reason = this.pendingCloseInfo.reason
+    }
+    if (!error) {
+      if (this.closedResolve) this.closedResolve({ reason, closeCode })
+    } else {
+      if (this.closedReject) {
+        const message = error.message
+        const oerror = new WebTransportError(message)
+        this.readyReject(oerror)
+        this.closedReject(oerror)
+      }
+    }
     if (this.closeHook) {
       this.closeHook()
       delete this.closeHook
@@ -887,6 +932,9 @@ export class WTWSSession {
     if (state === 'closed' || state === 'failed') return
 
     switch (args.cmd) {
+      case 'closeSession':
+        this.closeInt(args.closeInfo)
+        break
       case 'orderStream':
         this.parentobj.newStream(this, {
           bidirectional: args.bidirectional,
