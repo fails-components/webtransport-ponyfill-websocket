@@ -3,7 +3,10 @@
   "version": "0.0.4",
   "description": "A component to add a webtransport ponyfill over websocket (server and client) to node.js and the browser",
   "main": "src/node.js",
-  "browser": "src/browser.js",
+  "browser": {
+    "./src/node.js":  "src/browser.js",
+    "./test/fixtures/webtransport.js": "./test/fixtures/webtransport.browser.js"
+  },
   "engines": {
     "node": ">=16"
   },
@@ -13,7 +16,7 @@
     "test": "npm run test:node && npm run test:chromium",
     "test:node": "node test/index.js node",
     "test:chromium": "node test/index.js chromium",
-    "oldtest": "node old_test/test.js"
+    "oldtest": "node test/test.js"
   },
   "repository": {
     "type": "git",

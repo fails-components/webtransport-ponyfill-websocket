@@ -18,9 +18,18 @@ class StreamFactory {
   }
 
   newWebsocket(args) {
-    return new WebSocket(args, {
+    const heartbeat = function () {
+      clearTimeout(this.pingTimeout)
+      this.pingTimeout = setTimeout(() => {
+        this.terminate()
+      }, 1000 + 1000)
+    }
+    const ws = new WebSocket(args, {
       perMessageDeflate: false
     })
+    ws.on('ping', heartbeat)
+    ws.heartbeat = heartbeat
+    return ws
   }
 
   isNode() {

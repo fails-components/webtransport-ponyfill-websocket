@@ -43,6 +43,9 @@ export class WebTransportSocketServer {
       this.orderedStreamsCleanUp,
       1000
     )
+
+    this.onServerPing = this.onServerPing.bind(this)
+    this.pingInterval = setInterval(this.onServerPing, 1000)
   }
 
   address() {
@@ -67,7 +70,21 @@ export class WebTransportSocketServer {
    */
   onServerClose() {
     console.log('server closed')
+    clearInterval(this.pingintervak)
     this._closed.resolve()
+  }
+
+  onServerPing() {
+    // send pings to check if connections are still alive
+    const wssping = (wss) => {
+      wss.clients.forEach(function each(ws) {
+        if (ws.isAlive === false) return ws.terminate()
+        ws.isAlive = false
+        ws.ping()
+      })
+    }
+    Object.values(this.sessionWSSs).forEach(wssping)
+    Object.values(this.streamWSSs).forEach(wssping)
   }
 
   orderedStreamsCleanUp() {
@@ -82,6 +99,7 @@ export class WebTransportSocketServer {
     const { pathname } = new URL('http://' + request.headers.host + request.url)
     // TODO filter out streams
     let wss
+    // console.log('debug onUpgrade', pathname)
     if (pathname.endsWith('/stream')) {
       const orgpathname = pathname.substring(0, pathname.length - 7)
       wss = this.streamWSSs[orgpathname] // get the matching session
@@ -184,7 +202,13 @@ export class WebTransportSocketServer {
 
     this.sessionWSSs[path] = new WebSocketServer(serverargs)
 
+    const heartbeat = function () {
+      this.isAlive = true
+    }
+
     this.sessionWSSs[path].on('connection', (ws) => {
+      ws.isAlive = true
+      ws.on('pong', heartbeat)
       // we create a new session object, it handles all session stuff
       const sesobj = new WTWSSession({
         parentobj: this,
@@ -200,6 +224,8 @@ export class WebTransportSocketServer {
     this.streamWSSs[path] = new WebSocketServer(streamserverargs)
 
     this.streamWSSs[path].on('connection', (ws) => {
+      ws.isAlive = true
+      ws.on('pong', heartbeat)
       // we create a new stream object, it handles all stream stuff
       // it needs to attach to a session later
       WTWSStream.createStream({
