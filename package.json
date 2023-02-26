@@ -4,7 +4,7 @@
   "description": "A component to add a webtransport ponyfill over websocket (server and client) to node.js and the browser",
   "main": "src/node.js",
   "browser": {
-    "./src/node.js": "src/browser.js",
+    "src/node.js": "./src/browser.js",
     "./test/fixtures/webtransport.js": "./test/fixtures/webtransport.browser.js"
   },
   "engines": {
