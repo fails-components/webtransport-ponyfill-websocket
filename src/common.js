@@ -326,6 +326,14 @@ export class WTWSStream {
         } else res()
       })
     } else {
+      if (this.ws.readyState !== 1) {
+        rej(
+          new WebTransportError(
+            'Websocket is in wrong State: ' + this.ws.readyState
+          )
+        )
+        return prom
+      }
       try {
         this.ws.send(strsend)
       } catch (err) {
@@ -739,34 +747,48 @@ export class WTWSSession {
   }
 
   orderBidiStream() {
-    const nonce = this.createNonce()
-    // console.log('log nonce', nonce, this.role)
-    this.sendCommand({
-      cmd: 'orderStream',
-      bidirectional: true,
-      incoming: true,
-      nonce
-    })
-    this.parentobj.newStream(this, {
-      bidirectional: true,
-      incoming: false,
-      nonce
-    })
+    try {
+      const nonce = this.createNonce()
+      // console.log('log nonce', nonce, this.role)
+      this.sendCommand({
+        cmd: 'orderStream',
+        bidirectional: true,
+        incoming: true,
+        nonce
+      })
+      this.parentobj.newStream(this, {
+        bidirectional: true,
+        incoming: false,
+        nonce
+      })
+    } catch (error) {
+      console.log('orderBiStream Problem:', error)
+      const currej = this.rejectBiDi.shift()
+      this.resolveBiDi.shift()
+      currej('Ordering BidiStream failed:' + error)
+    }
   }
 
   orderUnidiStream() {
-    const nonce = this.createNonce()
-    this.sendCommand({
-      cmd: 'orderStream',
-      bidirectional: false,
-      incoming: true,
-      nonce
-    })
-    this.parentobj.newStream(this, {
-      bidirectional: false,
-      incoming: false,
-      nonce
-    })
+    try {
+      const nonce = this.createNonce()
+      this.sendCommand({
+        cmd: 'orderStream',
+        bidirectional: false,
+        incoming: true,
+        nonce
+      })
+      this.parentobj.newStream(this, {
+        bidirectional: false,
+        incoming: false,
+        nonce
+      })
+    } catch (error) {
+      console.log('orderUniStream Problem:', error)
+      const currej = this.rejectUniDi.shift()
+      this.resolveUniDi.shift()
+      currej('Ordering UnidiStream failed:' + error)
+    }
   }
 
   addStreamObj(stream) {
