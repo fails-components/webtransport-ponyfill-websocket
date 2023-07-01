@@ -912,8 +912,8 @@ export class WTWSSession {
       if (this.closedReject) {
         const message = error.message
         const oerror = new WebTransportError(message)
-        this.readyReject(oerror)
-        this.closedReject(oerror)
+        if (this.readyReject) this.readyReject(oerror)
+        if (this.closedReject) this.closedReject(oerror)
       }
     }
     if (this.closeHook) {
