@@ -6,7 +6,7 @@ import WebCrypto from 'tiny-webcrypto'
 import { encode as encodeBase64 } from 'base64-arraybuffer'
 import { WebTransportError } from './error.js'
 
-const bufferSize = 1024 * 512 // buffersize before blocking
+const bufferSize = 1024 * 256 // buffersize before blocking
 
 let streamfactory
 
@@ -369,25 +369,18 @@ export class WTWSStream {
 
   writeChunk(chunk) {
     // send a chunk of data and we have to clear pending operation
-    if (streamfactory.isNode()) {
-      this.ws.send(chunk, { binary: true }, (err) => {
-        if (err) this.pendingrej(err)
-        else this.pendingres()
-      })
-    } else {
-      if (this.ws.bufferedAmount > bufferSize) {
-        // block !
-        setTimeout(this.writeChunk, 100, chunk)
-        return
-      }
-      try {
-        this.ws.send(chunk)
-      } catch (err) {
-        this.pendingrej(err)
-        return
-      }
-      this.pendingres()
+    if (this.ws.bufferedAmount > bufferSize) {
+      // block !
+      setTimeout(this.writeChunk, 10, chunk)
+      return
     }
+    try {
+      this.ws.send(chunk)
+    } catch (err) {
+      this.pendingrej(err)
+      return
+    }
+    this.pendingres()
   }
 
   async streamFinal() {
