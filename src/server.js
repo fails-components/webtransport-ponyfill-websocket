@@ -177,7 +177,7 @@ export class WebTransportSocketServer {
         },
         await order.orderer.verifyKey,
         decodeBase64(args.signature),
-        nonce
+        new TextEncoder('utf-8').encode(nonce)
       )
     } catch (error) {
       console.log('stream verification failed', error)
