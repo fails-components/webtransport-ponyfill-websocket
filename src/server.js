@@ -181,6 +181,7 @@ export class WebTransportSocketServer {
       )
     } catch (error) {
       console.log('stream verification failed', error)
+      console.log('stream nonce type:', typeof nonce, 'nonce:', nonce)
     }
     if (!verified) {
       console.log('connection not verified')

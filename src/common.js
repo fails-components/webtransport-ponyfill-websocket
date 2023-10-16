@@ -470,6 +470,11 @@ export class WTWSStream {
       return
     }
     // }
+    if (!this.parentobj) {
+      console.trace()
+      console.log('incoming data without parentobj')
+      return
+    }
 
     const parentstate = this.parentobj.state
     if (parentstate === 'closed' || parentstate === 'failed') return
