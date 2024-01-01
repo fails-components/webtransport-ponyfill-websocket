@@ -3,6 +3,9 @@
 
 Tests on master ![master](https://github.com/fails-components/webtransport-ponyfill-websocket/actions/workflows/libtest.yml/badge.svg?branch=master)
 
+**This ponyfill/polyfill is now deprecated and will not be updated.
+ The node.js package @fails-components/webtransports acts, since version 1.0.0 also as a polyfill/ponyfill. It uses a different protocol, closer to the http/2 webtransport protcol.**
+
 (c) 2022- Marten Richter
 
 This package is part of FAILS.
@@ -22,12 +25,9 @@ So you must use it on the client  and server side (but not all webtransport feat
 Internally it opens websocket http/1 (to prevent head of line blocking) for the main WebTransport session and for every stream.
 A json webtoken like mechanism is used to pin and secure the stream to the main session.
 
-PR request are welcome and will be supported by advise from the author.
-
-* This is one of the first releases, if any problems occur, please report the issue via github to make the package stable. *
-
 
 ## Installation and usage
+**Pleae use `@fails-components/webtransport-ponyfill-websocket` instead.**
 You can install the package directly via npm from node.js or github packages:
 
 ```bash
